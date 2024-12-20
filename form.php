@@ -32,14 +32,9 @@ function valid_donnees($donnees) {
     $donnees = preg_replace('/<script.*?<\/script>/is', '', $donnees);
     $donnees = preg_replace('/(on\w+\s*=\s*["\']).*?["\']/is', '', $donnees);
     $donnees = stripslashes($donnees);
-    $donnees = htmlspecialchars($donnees, ENT_QUOTES, 'UTF-8');
+    $donnees = htmlspecialchars($donnees, ENT_QUOTES,);
     return $donnees;
 }
-
-// Date mise à jour
-date_default_timezone_set("Europe/Paris");
-$now = time();
-$date = date('d/m/Y', $now);
 
 echo "<h2>Résumé de votre formulaire de demande :</h2>";
 
@@ -80,6 +75,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (stripos($userInput, '<script') !== false) {
         $errorMessages[] = "Le contenu contient un script et a été supprimé.";
     }
+    // Date mise à jour
+    date_default_timezone_set("Europe/Paris");
+    $now = time();
+    
     if (empty($bdate)) { 
         $errorMessages[] = "La date de l'événement est requise.";
     } else { 
@@ -101,7 +100,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $errorMessages[] = "La description de l'événement est requise.";
     }
 
-    if (empty($promotor)){
+    if (empty($promotor) || strlen($promotor) >= 100){
         $errorMessages[] = "Le nom du promoteur est requis.";
     }
 
@@ -125,11 +124,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $errorMessages[] = "Le type de performance est requis.";
     }
 
-    if (empty($timeMin) || !is_numeric($timeMin) || strlen($attendance) >= 4000) {
+    if (empty($timeMin) || !is_numeric($timeMin) || strlen($attendance) >= 5) {
         $errorMessages[] = "La durée de l'événement en minutes est requise.";
     }
 
-    if (empty($Contact['firstname']) || empty($Contact['lastname']) || empty($Contact['email']) || empty($Contact['number']) || strlen($Contact['firstname']) >= 50 || !preg_match("/^[A-Za-z '-]+$/",$Contact['firstname']) || !preg_match("/^[A-Za-z '-]+$/",$Contact['lastname']) || strlen($Contact['lastname']) >= 50 || strlen($Contact['number']) >= 15 || !is_numeric($Contact['number'])) {
+    if (empty($Contact['firstname']) || empty($Contact['lastname']) || empty($Contact['email']) || empty($Contact['number']) || strlen($Contact['firstname']) >= 50 || strlen($Contact['lastname']) >= 50 || strlen($Contact['number']) >= 15 || !is_numeric($Contact['number'])) {
         $errorMessages[] = "Les informations de contact sont invalides.";
     }
 
@@ -141,14 +140,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $errorMessages[] = "La réponse concernant l'enregistrement est requise.";
     }
  
-     // Vérification du fichier recu
-     if (isset($fichier) && $fichier['error'] === 0) {
+        // Vérification du fichier recu
+    if (isset($fichier) && $fichier['error'] === 0) {
         $fileInfo = pathinfo($fichier['name']);
         $extension = strtolower($fileInfo['extension']);
         $mimeType = mime_content_type($fichier['tmp_name']);
-
+    
     // Vérification du type MIME (verifie le contenu des fichiers uploads merci steve)
     $allowedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+
 
     if ($fichier['size'] > 10000000) {
         $errorMessages[] = "File upload failed, file is too large.";
@@ -169,9 +169,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
         }
+    
     }
 
-    // Affichage des erreurs ou des informations
+    // Affichage des erreurs
     if (!empty($errorMessages)) {
         echo "<div class='errors'>";
         foreach ($errorMessages as $error) {
@@ -198,27 +199,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         echo echoArray($Contact);
         echo "<br>L'événement sera enregistré : $record.";
         //Afficher le fichier recu :
-if (isset($fileUrl)) {
-    // Vérifiez l'extension du fichier
-    $fileExtension = strtolower(pathinfo($fileUrl, PATHINFO_EXTENSION));
+        if (isset($fileUrl)) {
+            // Vérifiez l'extension du fichier
+            $fileExtension = strtolower(pathinfo($fileUrl, PATHINFO_EXTENSION));
 
-    // Si c'est une image, on l'affiche directement
-    if (in_array($fileExtension, ['jpg', 'jpeg', 'png'])) {
-        echo "<p><strong>Uploaded File:</strong><br><img src='$fileUrl' alt='Uploaded Image' style='max-width: 100%; height: auto;'></p>";
-    }
-    // Si c'est un PDF, on affiche un lien
-    elseif ($fileExtension == 'pdf') {
-        echo "<p><strong>Uploaded File:</strong><br><a href='$fileUrl' target='_blank'>View PDF</a></p>";
-    }
-}
-        
+            // Si c'est une image, on l'affiche directement
+            if (in_array($fileExtension, ['jpg', 'jpeg', 'png'])) {
+                echo "<p><strong>Uploaded File:</strong><br><img src='$fileUrl' alt='Uploaded Image' style='max-width: 100%; height: auto;'></p>";
+            }
+            // Si c'est un PDF, on affiche un lien
+            elseif ($fileExtension == 'pdf') {
+                echo "<p><strong>Uploaded File:</strong><br><a href='$fileUrl' target='_blank'>View PDF</a></p>";
+            }
+        }
     }
 
 
-// Message de réussite 
+// Message de réussite
 if (!empty($errorMessages)) { 
     foreach ($errorMessages as $error) { 
-        
     } 
 } else {
     echo "<p style='color:green;'>Form submitted successfully!</p>";
@@ -226,5 +225,4 @@ if (!empty($errorMessages)) {
 
 // Lien vers le site HTML
 echo '<a href="form.html">Pour remplir le formulaire, cliquez ici !</a>';
-
 ?>
